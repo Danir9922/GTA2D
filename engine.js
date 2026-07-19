@@ -16,7 +16,6 @@ addEventListener('mousedown',e=>{if(e.button===0)mouseDown=true})
 addEventListener('mouseup',e=>{if(e.button===0)mouseDown=false})
 addEventListener('contextmenu',e=>{if(showFullMap)e.preventDefault();});
 
-// ===== AUDIO =====
 let audioCtx=null,musicGain=null,sfxGain=null,musicPlaying=false,musicNodes=[],musicTimeout=null;
 const settings={musicVolume:.5,sfxVolume:.7,brightness:1,vsync:true,fpsLimit:60,showFPS:false};
 function initAudio(){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();musicGain=audioCtx.createGain();musicGain.gain.value=settings.musicVolume;musicGain.connect(audioCtx.destination);sfxGain=audioCtx.createGain();sfxGain.gain.value=settings.sfxVolume;sfxGain.connect(audioCtx.destination);}catch(e){}}
@@ -49,7 +48,6 @@ for(let b=0;b<bars;b++)for(let bt=0;bt<4;bt++){const t=now+b*bar+bt*beat;const o
 for(let i=0;i<bars*8;i++){const t=now+i*beat*.5;const buf=audioCtx.createBuffer(1,audioCtx.sampleRate*.03,audioCtx.sampleRate);const d=buf.getChannelData(0);for(let s=0;s<d.length;s++)d[s]=(Math.random()*2-1)*(1-s/d.length);const src=audioCtx.createBufferSource(),g=audioCtx.createGain(),f=audioCtx.createBiquadFilter();f.type='highpass';f.frequency.value=8000;src.buffer=buf;g.gain.value=(i%2===0)?.025:.012;src.connect(f);f.connect(g);g.connect(musicGain);src.start(t);musicNodes.push(src);}
 musicTimeout=setTimeout(()=>{musicNodes=[];if(musicPlaying)musicLoop();},loop*1000-100);}
 
-// ===== LOBBY =====
 let lobbyActive=true,lobbyMenu='main',lobbySel=0,lobbyAnim=0,gameStarted=false;
 const lobbyStars=[],lobbyCars=[];
 for(let i=0;i<80;i++)lobbyStars.push({x:Math.random(),y:Math.random(),s:Math.random()*2+.5,tw:Math.random()*6.28});
@@ -80,12 +78,11 @@ if(code==='ArrowLeft'||code==='ArrowRight'){const d=code==='ArrowRight'?1:-1;
   if(lobbySel===4){const arr=[30,60,144];settings.fpsLimit=arr[(arr.indexOf(settings.fpsLimit)+d+3)%3];}
  }playSFX('click');}
 if(code==='Enter'||code==='Space'){playSFX('select');lobbyPick();}}
-function lobbyPick(){if(lobbyMenu==='main'){if(lobbySel===0){lobbyActive=false;gameStarted=true;startGame();}if(lobbySel===1){if(gameStarted)lobbyActive=false;}if(lobbySel===2){lobbyMenu='settings';lobbySel=0;}}
+function lobbyPick(){if(lobbyMenu==='main'){if(lobbySel===0){lobbyActive=false;gameStarted=true;startGame();}if(lobbySel===1){if(gameStarted)lobbyActive=false;}if(lobbySel===2){lobbyMenu='settings';lobbySel=0;}if(lobbySel===3){showExit();}}
 else if(lobbyMenu==='settings'){if(lobbySel===5){lobbyMenu='controls';lobbySel=0;}if(lobbySel===6){lobbyMenu='main';lobbySel=2;}}
 else if(lobbyMenu==='controls'){lobbyMenu='settings';lobbySel=5;}
 else if(lobbyMenu==='pause'){if(lobbySel===0)lobbyActive=false;if(lobbySel===1){lobbyMenu='settings';lobbySel=0;}if(lobbySel===2){lobbyActive=true;lobbyMenu='main';lobbySel=0;}}}
 
-// ===== WORLD =====
 const buildings=[],parks=[],waterBodies=[],bloodDecals=[];
 const camera={x:0,y:0};
 let gameTime=0,dayTime=0,kills=0,showFullMap=false;
@@ -166,7 +163,6 @@ function spawnParticles(x,y,color,n,sp){for(let i=0;i<n;i++){const a=rand(0,6.28
 function createExplosion(x,y){explosions.push({x,y,radius:0,life:30});spawnParticles(x,y,'#f80',20,5);spawnParticles(x,y,'#ff0',15,4);playSFX('explosion');npcs.forEach(n=>{if(n.alive&&dist(n,{x,y})<100){n.health-=80;if(n.health<=0){n.alive=false;addBlood(n.x,n.y);}}});if(dist(player,{x,y})<100&&!player.inVehicle)damagePlayer(50);}
 function shoot(x,y,angle,dmg,range,owner){bullets.push({x,y,angle,damage:dmg,range,speed:12,traveled:0,owner});}
 
-// ===== UPDATE =====
 function update(){gameTime++;dayTime=(gameTime%DAYCYCLE)/DAYCYCLE;
 if(!isFinite(player.x))player.x=8*BLOCK*TILE;if(!isFinite(player.y))player.y=8*BLOCK*TILE;
 const hh=dayTime*24;
@@ -256,7 +252,6 @@ for(let i=explosions.length-1;i>=0;i--){explosions[i].radius+=4;explosions[i].li
 pickups.forEach(p=>{if(!p.active){p.respawnTimer--;if(p.respawnTimer<=0)p.active=true;}});
 camera.x=player.x-canvas.width/2;camera.y=player.y-canvas.height/2;if(!isFinite(camera.x))camera.x=0;if(!isFinite(camera.y))camera.y=0;}
 
-// ===== RENDER =====
 function render(){const W=canvas.width,H=canvas.height;ctx.clearRect(0,0,W,H);ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
 const nightAlpha=window.skyAlpha?window.skyAlpha(dayTime):Math.max(0,Math.sin(dayTime*6.28-1.57))*.4;
 const skyRGB=window.skyRGB?window.skyRGB(dayTime):'10,10,40';
@@ -318,16 +313,34 @@ ctx.fillStyle='#fff';ctx.font='bold 24px Arial';ctx.textAlign='center';ctx.fillT
 ctx.fillStyle='#999';ctx.font='13px Arial';ctx.fillText('ЛКМ‑двигать · ПКМ: ←→ поворот, ↑↓ зум · колесо‑зум · R‑сброс · M‑закрыть',W/2,H-25);
 ctx.fillText('зум x'+mapState.zoom.toFixed(1)+'  поворот '+Math.round(mapState.rot*57.3)+'°',W/2,H-45);}
 
-// ===== ВВОД =====
-addEventListener('keydown',e=>{unlockAudio();
-if(window.cutsceneSystem&&window.cutsceneSystem.active){if(e.code==='Enter'||e.code==='Space'){window.cutsceneSystem.advance();e.preventDefault();return;}if(e.code==='Escape'){window.cutsceneSystem.skip();e.preventDefault();return;}e.preventDefault();return;}
-if(lobbyActive){lobbyKey(e.code);e.preventDefault();return;}
-if(e.code==='F3'){settings.showFPS=!settings.showFPS;e.preventDefault();return;}
-keys[e.code]=true;
-if(e.code==='Escape'&&gameStarted){lobbyActive=true;lobbyMenu='pause';lobbySel=0;}
-if(e.code==='KeyM'&&gameStarted){showFullMap=!showFullMap;if(showFullMap){mapState.zoom=1;mapState.rot=0;mapState.panX=0;mapState.panY=0;}}
-if(e.code==='KeyR'&&showFullMap){mapState.zoom=1;mapState.rot=0;mapState.panX=0;mapState.panY=0;}
-e.preventDefault();});
+// ===== ПОДТВЕРЖДЕНИЕ ВЫХОДА =====
+let exitConfirmOpen=false,exitSel=1;
+const exitBox=document.createElement('div');
+exitBox.style.cssText='display:none;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;pointer-events:auto;font-family:Segoe UI,Arial,sans-serif';
+exitBox.innerHTML='<div style="background:#15152a;border:2px solid #f80;border-radius:14px;padding:34px 44px;text-align:center;box-shadow:0 0 40px rgba(255,136,0,.45)"><div style="color:#fff;font-size:26px;font-weight:bold;margin-bottom:10px">🚪 ВЫХОД</div><div style="color:#ccc;font-size:18px;margin-bottom:26px">Вы уверены, что хотите выйти из игры?</div><div id="exitBtns" style="display:flex;gap:22px;justify-content:center"></div><div id="exitHint" style="color:#666;font-size:12px;margin-top:20px">← → выбор · ENTER подтвердить · ESC отмена</div></div>';
+document.body.appendChild(exitBox);
+const exitBtns=exitBox.querySelector('#exitBtns'),exitHint=exitBox.querySelector('#exitHint');
+function paintExitBtns(){exitBtns.innerHTML='';['✅ ДА, выйти','❌ НЕТ, остаться'].forEach((t,i)=>{const b=document.createElement('button');b.textContent=t;b.style.cssText='padding:13px 28px;font-size:18px;font-weight:bold;border-radius:9px;cursor:pointer;border:2px solid '+(i===exitSel?'#f80':'#555')+';background:'+(i===exitSel?'rgba(255,136,0,.2)':'#222')+';color:'+(i===exitSel?'#fff':'#999');b.onmouseenter=()=>{exitSel=i;paintExitBtns();};b.onclick=()=>{exitSel=i;exitPick();};exitBtns.appendChild(b);});}
+function showExit(){exitConfirmOpen=true;exitSel=1;exitHint.style.color='#666';exitHint.style.fontSize='12px';exitHint.textContent='← → выбор · ENTER подтвердить · ESC отмена';exitBox.style.display='flex';paintExitBtns();}
+function hideExit(){exitConfirmOpen=false;exitBox.style.display='none';}
+function exitPick(){if(exitSel===0){window.close();exitBtns.innerHTML='';exitHint.style.color='#fc0';exitHint.style.fontSize='16px';exitHint.textContent='⚠️ Браузер запретил авто‑закрытие. Закрой вкладку сам: Ctrl+W (или крестиком).';}else hideExit();}
+
+addEventListener('keydown',e=>{
+ if(exitConfirmOpen){
+  if(e.code==='ArrowLeft'||e.code==='ArrowRight'||e.code==='Tab'){exitSel=exitSel?0:1;paintExitBtns();}
+  else if(e.code==='Enter'||e.code==='Space'){exitPick();}
+  else if(e.code==='Escape'){hideExit();}
+  e.preventDefault();return;
+ }
+ unlockAudio();
+ if(window.cutsceneSystem&&window.cutsceneSystem.active){if(e.code==='Enter'||e.code==='Space'){window.cutsceneSystem.advance();e.preventDefault();return;}if(e.code==='Escape'){window.cutsceneSystem.skip();e.preventDefault();return;}e.preventDefault();return;}
+ if(lobbyActive){lobbyKey(e.code);e.preventDefault();return;}
+ if(e.code==='F3'){settings.showFPS=!settings.showFPS;e.preventDefault();return;}
+ keys[e.code]=true;
+ if(e.code==='Escape'&&gameStarted){lobbyActive=true;lobbyMenu='pause';lobbySel=0;}
+ if(e.code==='KeyM'&&gameStarted){showFullMap=!showFullMap;if(showFullMap){mapState.zoom=1;mapState.rot=0;mapState.panX=0;mapState.panY=0;}}
+ if(e.code==='KeyR'&&showFullMap){mapState.zoom=1;mapState.rot=0;mapState.panX=0;mapState.panY=0;}
+ e.preventDefault();});
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('click',unlockAudio);
 addEventListener('mousedown',e=>{if(!showFullMap)return;if(e.button===0){mapState.leftDown=true;mapState.lx=e.clientX;mapState.ly=e.clientY;}if(e.button===2){mapState.rightDown=true;mapState.lx=e.clientX;mapState.ly=e.clientY;}});
@@ -335,7 +348,6 @@ addEventListener('mouseup',e=>{if(e.button===0)mapState.leftDown=false;if(e.butt
 addEventListener('mousemove',e=>{if(!showFullMap)return;if(mapState.leftDown){mapState.panX+=e.clientX-mapState.lx;mapState.panY+=e.clientY-mapState.ly;mapState.lx=e.clientX;mapState.ly=e.clientY;}if(mapState.rightDown){mapState.rot+=(e.clientX-mapState.lx)*0.004;mapState.zoom=clamp(mapState.zoom-(e.clientY-mapState.ly)*0.008,0.5,5);mapState.lx=e.clientX;mapState.ly=e.clientY;}});
 addEventListener('wheel',e=>{if(!showFullMap)return;mapState.zoom=clamp(mapState.zoom*(e.deltaY<0?1.1:0.9),0.5,5);e.preventDefault();},{passive:false});
 
-// ===== GAME LOOP =====
 let _fpsT=performance.now(),_fpsC=0,_fps=60;
 function gameLoop(t){
   _fpsC++;if(t-_fpsT>=500){_fps=Math.round(_fpsC*1000/(t-_fpsT));_fpsC=0;_fpsT=t;}
