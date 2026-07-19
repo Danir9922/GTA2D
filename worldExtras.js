@@ -18,7 +18,6 @@ function relocateFromWater(o){
  o.x = clamp(o.x, RC, WORLD_W-RC); o.angle=0; if(o.speed===undefined)o.speed=0;
 }
 window.onWorldReady=function(){
- window.clearBlock(0,PROLIV); window.clearBlock(0,RIVER);
  for(var bx=0;bx<MAP_BLOCKS;bx++){window.clearBlock(bx,PROLIV);window.clearBlock(bx,RIVER);}
  for(var k in SHOP_DEFS){var d=SHOP_DEFS[k];window.clearBlock(d.bi,d.bj);var bx=d.bi*BS+RC+16,by=d.bj*BS+RC+16;buildings.push({x:bx,y:by,w:130,h:120,color:'#5a5a6a',roofColor:'#333',_shop:k});shopDoors[k]={x:bx-8,y:by+60};}
  sleepSpot.x=9*BS+RC+40; sleepSpot.y=8*BS+RC+40;
@@ -36,6 +35,7 @@ function drawBridge(ctx,b,label){
  ctx.fillStyle='#8a6a3a';ctx.fillRect(b.x,b.y,b.w,b.h);
  ctx.strokeStyle='#5a4020';ctx.lineWidth=2;for(var yy=b.y;yy<b.y+b.h;yy+=14){ctx.beginPath();ctx.moveTo(b.x,yy);ctx.lineTo(b.x+b.w,yy);ctx.stroke();}
  ctx.fillStyle='#444';ctx.fillRect(b.x-8,b.y,4,b.h);ctx.fillRect(b.x+b.w+4,b.y,4,b.h);
+ for(var yy=b.y+10;yy<b.y+b.h;yy+=40){ctx.fillStyle='#333';ctx.fillRect(b.x-12,yy,4,8);ctx.fillRect(b.x+b.w+8,yy,4,8);}
  ctx.fillStyle='#fff';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.save();ctx.translate(b.x+b.w/2,b.y+b.h/2);ctx.rotate(Math.PI/2);ctx.fillText(label,0,3);ctx.restore();
 }
 window.renderGroundExtras=function(ctx){
