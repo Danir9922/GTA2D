@@ -147,8 +147,7 @@
     function lobbyPick(){if(lobbyMenu==='main'){if(lobbySel===0){lobbyActive=false;gameStarted=true;startGame();}if(lobbySel===1){if(gameStarted)lobbyActive=false;}if(lobbySel===2){lobbyMenu='settings';lobbySel=0;}}
     else if(lobbyMenu==='settings'){if(lobbySel===5){lobbyMenu='controls';lobbySel=0;}if(lobbySel===6){lobbyMenu='main';lobbySel=2;}}
     else if(lobbyMenu==='controls'){lobbyMenu='settings';lobbySel=5;}
-    else if(lobbyMenu==='pause'){if(lobbySel===0)lobbyActive=false;if(lobbySel===1){lobbyMenu='settings';lobbySel=0;}if(lobbySel===2){lobbyActive=true;lobbyMenu='main';lobbySel=0;gameStarted=false;stopMusic();}}}
-
+    else if(lobbyMenu==='pause'){if(lobbySel===0)lobbyActive=false;if(lobbySel===1){lobbyMenu='settings';lobbySel=0;}if(lobbySel===2){lobbyActive=true;lobbyMenu='main';lobbySel=0;}
     // ===== WORLD =====
     const TILE=64,ROAD_W=3,BLOCK=8,MAP_BLOCKS=16;
     const WORLD_W=MAP_BLOCKS*BLOCK*TILE,WORLD_H=WORLD_W;
