@@ -54,9 +54,9 @@ function drawInterior(ctx,W,H,tvMode){
  drawFurniture(ctx,W,H);
  if(!tvMode){var nz=nearestZone();if(nz){ctx.strokeStyle='#ff0';ctx.lineWidth=4;ctx.strokeRect(nz.x*W-4,nz.y*H-4,nz.w*W+8,nz.h*H+8);ctx.save();ctx.shadowColor='#000';ctx.shadowBlur=6;ctx.fillStyle='#ff0';ctx.font='bold 20px Arial';ctx.textAlign='center';ctx.fillText(nz.hint,(nz.x+nz.w/2)*W,nz.y*H-26);ctx.restore();}}
  drawPlayer(ctx,W,H);
- if(tvMode){ctx.fillStyle='rgba(0,0,0,.85)';ctx.fillRect(W*0.18,H*0.30,W*0.64,H*0.40);ctx.strokeStyle='#0a3';ctx.lineWidth=3;ctx.strokeRect(W*0.18,H*0.30,W*0.64,H*0.40);ctx.fillStyle='#0f0';ctx.font='bold 22px monospace';ctx.textAlign='left';ctx.fillText('CH '+(tvCh+1),W*0.21,H*0.36);ctx.fillStyle='#fff';ctx.font='20px Arial';ctx.textAlign='center';var txt=TV_CHANNELS[tvCh%TV_CHANNELS.length],words=txt.split(' '),line='',ly=H*0.46;words.forEach(function(w){var t=line+w+' ';if(ctx.measureText(t).width>W*0.56){ctx.fillText(line,W*0.5,ly);line=w+' ';ly+=28;}else line=t;});ctx.fillText(line,W*0.5,ly);ctx.fillStyle='#aaa';ctx.font='15px Arial';ctx.fillText('← → переключить канал     E / ESC — выключить ТВ',W*0.5,H*0.66);}
+ if(tvMode){ctx.fillStyle='rgba(0,0,0,.85)';ctx.fillRect(W*0.18,H*0.30,W*0.64,H*0.40);ctx.strokeStyle='#0a3';ctx.lineWidth=3;ctx.strokeRect(W*0.18,H*0.30,W*0.64,H*0.40);ctx.fillStyle='#0f0';ctx.font='bold 22px monospace';ctx.textAlign='left';ctx.fillText('CH '+(tvCh+1),W*0.21,H*0.36);ctx.fillStyle='#fff';ctx.font='20px Arial';ctx.textAlign='center';var txt=TV_CHANNELS[tvCh%TV_CHANNELS.length],words=txt.split(' '),line='',ly=H*0.46;words.forEach(function(w){var t=line+w+' ';if(ctx.measureText(t).width>W*0.56){ctx.fillText(line,W*0.5,ly);line=w+' ';ly+=28;}else line=t;});ctx.fillText(line,W*0.5,ly);ctx.fillStyle='#aaa';ctx.font='15px Arial';ctx.fillText('← → переключить канал     E / ESC — выключить ТВ',W/0.5?W*0.5:W*0.5,H*0.66);}
  ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,H-40,W,40);ctx.fillStyle='#ff0';ctx.font='bold 14px Arial';ctx.textAlign='center';ctx.fillText('WASD — ходить   ·   подойди к предмету (жёлтая рамка) и нажми E   ·   ESC — ВЫЙТИ СРАЗУ',W/2,H-14);
- ctx.fillStyle='#0f0';ctx.font='10px monospace';ctx.textAlign='left';ctx.fillText('home v7',8,H-46);
+ ctx.fillStyle='#0f0';ctx.font='10px monospace';ctx.textAlign='left';ctx.fillText('home v8',8,H-46);
 }
 function hideHUD(on){var ids=['minimap-container','controls-hint','clock','hud-top','info-panel','speed-display'];for(var i=0;i<ids.length;i++){var el=document.getElementById(ids[i]);if(el)el.style.display=on?'none':'';}}
 addEventListener('keydown',function(e){
@@ -84,8 +84,10 @@ var _hr=window.renderMissionHUD;
 window.renderMissionHUD=function(ctx,W,H){
  if(window.interiorOpen==='tv'){hideHUD(true);gameTime++;dayTime=(gameTime%DAYCYCLE)/DAYCYCLE;drawInterior(ctx,W,H,true);return;}
  if(window.interiorOpen==='home'){hideHUD(true);homeWorldUpdate();drawInterior(ctx,W,H,false);return;}
- hideHUD(false);
+ var cs=window.cutsceneSystem&&window.cutsceneSystem.active;
+ hideHUD(cs);
  if(_hr)_hr(ctx,W,H);
+ if(cs)return;
  if(!window.homePos)return;
  var s=180/WORLD_W;miniCtx.fillStyle='#4c4';miniCtx.fillRect(window.homePos.x*s-2,window.homePos.y*s-2,5,5);
  ctx.save();ctx.translate(-camera.x,-camera.y);var p=window.homePos;ctx.fillStyle='#4c4';ctx.font='bold 14px Arial';ctx.textAlign='center';ctx.fillText('🏠 ДОМ',p.x,p.y-12);ctx.strokeStyle='#4c4';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y+30,22+Math.sin(gameTime*.08)*3,0,6.28);ctx.stroke();if(dist(player,p)<60){ctx.fillStyle='#fff';ctx.font='12px Arial';ctx.fillText('[E] войти',p.x,p.y+58);}ctx.restore();
