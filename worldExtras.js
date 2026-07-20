@@ -10,7 +10,7 @@ var PROLIV=3, RIVER=12, PED=[8,8];
 var bridgeN={x:8*BS, y:PROLIV*BS-32, w:RC, h:BS+64};
 var bridgeS={x:8*BS, y:RIVER*BS-32,  w:RC, h:BS+64};
 window.bridges=[bridgeN,bridgeS];
-var SHOP_DEFS={weapon:{bi:6,bj:6,color:'#f80',icon:'🔫',label:'ОРУЖЕЙНЫЙ'},clothes:{bi:9,bj:6,color:'#f0a',icon:'👕',label:'ОДЕЖДА'},home:{bi:6,bj:9,color:'#4c4',icon:'🏠',label:'ДОМ'}};
+var SHOP_DEFS={weapon:{bi:6,bj:6,color:'#f80',icon:'🔫',label:'ОРУЖЕЙНЫЙ'},clothes:{bi:9,bj:6,color:'#f0a',icon:'👕',label:'ОДЕЖДА'},home:{bi:2,bj:4,color:'#4c4',icon:'🏠',label:'ДОМ'}};
 var shopDoors={};var sleepSpot={x:0,y:0};
 var PARK_BLOCKS=[[5,5],[8,5],[5,10],[10,5],[7,7]];
 var parkTrees=[],parkPaths=[];
@@ -40,22 +40,25 @@ window.onWorldReady=function(){
  (trafficVehicles||[]).forEach(function(t){relocateFromWater(t);if(Math.abs(t.speed)<0.5)t.speed=2;});
  (npcs||[]).forEach(relocateFromWater);
  heli=null;tanks.length=0;heliT=0;tankT=0;fishState.day=curDay();fishState.limit=randInt(5,10);fishState.count=0;fishState.tired=false;fishState.casting=false;
- console.log('worldExtras v6 ЗАГРУЖЕН');
+ console.log('worldExtras v7 ЗАГРУЖЕН');
 };
 function frontBad(x,y,a){var fx=x+Math.cos(a)*30,fy=y+Math.sin(a)*30;return (typeof isInWater==='function'&&isInWater(fx,fy))||(typeof collidesBuilding==='function'&&collidesBuilding(fx,fy,18));}
 function trafficFix(){for(var i=0;i<trafficVehicles.length;i++){var t=trafficVehicles[i];if(typeof isInWater==='function'&&isInWater(t.x,t.y)){relocateFromWater(t);continue;}if(frontBad(t.x,t.y,t.angle)){t.angle+=(Math.random()<.5?1:-1)*Math.PI/2;if(frontBad(t.x,t.y,t.angle))t.angle+=Math.PI;t.speed=Math.max(t.speed,2);}else if(Math.abs(t.speed)<0.6){t.speed=2;}}}
 function policeUnstuck(){for(var i=0;i<policeVehicles.length;i++){var p=policeVehicles[i];if(p.leaving)continue;if(typeof isInWater==='function'&&isInWater(p.x,p.y)){p.y=(p.y<8*BS)?(PROLIV+1)*BS+RC:(RIVER+1)*BS+RC;p.x=clamp(p.x,RC,WORLD_W-RC);}if(frontBad(p.x,p.y,p.angle)){p.angle+=(Math.random()<.5?1:-1)*1.3;p.speed=Math.max(p.speed,2);}}}
-function hostileAI(){for(var i=0;i<npcs.length;i++){var n=npcs[i];if(!n.hostile||!n.alive)continue;n.atHome=false;n.fleeing=false;var d=dist(n,player);n.angle=angleTo(n,player);if(d>120){var nx=n.x+Math.cos(n.angle)*1.3,ny=n.y+Math.sin(n.angle)*1.3;if(typeof collidesBuilding!=='function'||!collidesBuilding(nx,ny,8)){n.x=nx;n.y=ny;}}n.x=clamp(n.x,0,WORLD_W);n.y=clamp(n.y,0,WORLD_H);n.shootT=(n.shootT||60)-1;if(d<300&&n.shootT<=0){n.shootT=45+rand(0,40);shoot(n.x+Math.cos(n.angle)*12,n.y+Math.sin(n.angle)*12,n.angle+rand(-.12,.12),7,300,'police');playSFX('shoot');}n.animTimer++;if(n.animTimer>8){n.animTimer=0;n.animFrame=(n.animFrame+1)%4;}}}
+function hostileAI(){var st=Math.floor(player.wanted);for(var i=0;i<npcs.length;i++){var n=npcs[i];if(!n.hostile||!n.alive)continue;if(st<=0){n.hostile=false;continue;}n.atHome=false;n.fleeing=false;var d=dist(n,player);n.angle=angleTo(n,player);if(d>120){var nx=n.x+Math.cos(n.angle)*1.3,ny=n.y+Math.sin(n.angle)*1.3;if(typeof collidesBuilding!=='function'||!collidesBuilding(nx,ny,8)){n.x=nx;n.y=ny;}}n.x=clamp(n.x,0,WORLD_W);n.y=clamp(n.y,0,WORLD_H);n.shootT=(n.shootT||60)-1;if(d<300&&n.shootT<=0){n.shootT=45+rand(0,40);shoot(n.x+Math.cos(n.angle)*12,n.y+Math.sin(n.angle)*12,n.angle+rand(-.12,.12),7,300,'police');playSFX('shoot');}n.animTimer++;if(n.animTimer>8){n.animTimer=0;n.animFrame=(n.animFrame+1)%4;}}}
 function spawnSoldier(x,y){npcs.push({x:x+rand(-20,20),y:y+rand(-20,20),angle:0,speed:1,health:60,alive:true,color:'#dba',shirt:'#353',turnTimer:999,fleeing:false,fleeAngle:0,animFrame:0,animTimer:0,homeX:x,homeY:y,atHome:false,bound:false,hostile:true,shootT:40});}
 function heliLogic(){var st=Math.floor(player.wanted);
  if(st>=4){heliT--;if(!heli&&heliT<=0){var a=rand(0,6.28);heli={x:player.x+Math.cos(a)*700,y:player.y+Math.sin(a)*700,angle:0,hp:120,shootT:60,rot:0};}}
  else if(heli){heli.leave=true;}
  if(heli){heli.rot+=0.4;var d=dist(heli,player);heli.angle=angleTo(heli,player);if(heli.leave){heli.x+=Math.cos(heli.angle+Math.PI)*5;heli.y+=Math.sin(heli.angle+Math.PI)*5;if(d>1400)heli=null;}else{if(d>180){heli.x+=Math.cos(heli.angle)*3.2;heli.y+=Math.sin(heli.angle)*3.2;}heli.shootT--;if(heli.shootT<=0&&d<400){heli.shootT=35;shoot(heli.x,heli.y,angleTo(heli,player)+rand(-.1,.1),8,400,'police');playSFX('shoot');}}}
- if(st>=5){tankT--;if(tankT<=0&&tanks.length<2){tankT=400;var a2=rand(0,6.28);tanks.push({x:player.x+Math.cos(a2)*600,y:player.y+Math.sin(a2)*600,angle:0,hp:300,shootT:80,soldT:120});}}
- for(var i=tanks.length-1;i>=0;i--){var tk=tanks[i];var d2=dist(tk,player);tk.angle=angleTo(tk,player);if(d2>140){var nx=tk.x+Math.cos(tk.angle)*1.1,ny=tk.y+Math.sin(tk.angle)*1.1;if(typeof collidesBuilding!=='function'||!collidesBuilding(nx,ny,24)){tk.x=nx;tk.y=ny;}}if(typeof isInWater==='function'&&isInWater(tk.x,tk.y)){tk.y=(tk.y<8*BS)?(PROLIV+1)*BS+RC:(RIVER+1)*BS+RC;}tk.shootT--;if(tk.shootT<=0&&d2<500){tk.shootT=70;shoot(tk.x+Math.cos(tk.angle)*26,tk.y+Math.sin(tk.angle)*26,tk.angle+rand(-.06,.06),14,500,'police');playSFX('explosion');}tk.soldT--;if(tk.soldT<=0&&d2<400){tk.soldT=160;spawnSoldier(tk.x,tk.y);}if(tk.hp<=0){createExplosion(tk.x,tk.y);tanks.splice(i,1);player.money+=200;}}}
+ if(st>=5){tankT--;if(tankT<=0&&tanks.length<2){tankT=400;var a2=rand(0,6.28);tanks.push({x:player.x+Math.cos(a2)*600,y:player.y+Math.sin(a2)*600,angle:0,hp:300,shootT:80,soldT:120,leave:false});}}
+ else {for(var q=0;q<tanks.length;q++)tanks[q].leave=true;}
+ for(var i=tanks.length-1;i>=0;i--){var tk=tanks[i];var d2=dist(tk,player);
+  if(tk.leave){var aw=angleTo(tk,player)+Math.PI;tk.x+=Math.cos(aw)*2.2;tk.y+=Math.sin(aw)*2.2;if(d2>1400||tk.x<0||tk.x>WORLD_W||tk.y<0||tk.y>WORLD_H)tanks.splice(i,1);continue;}
+  tk.angle=angleTo(tk,player);if(d2>140){var nx=tk.x+Math.cos(tk.angle)*1.1,ny=tk.y+Math.sin(tk.angle)*1.1;if(typeof collidesBuilding!=='function'||!collidesBuilding(nx,ny,24)){tk.x=nx;tk.y=ny;}}if(typeof isInWater==='function'&&isInWater(tk.x,tk.y)){tk.y=(tk.y<8*BS)?(PROLIV+1)*BS+RC:(RIVER+1)*BS+RC;}tk.shootT--;if(tk.shootT<=0&&d2<500){tk.shootT=70;shoot(tk.x+Math.cos(tk.angle)*26,tk.y+Math.sin(tk.angle)*26,tk.angle+rand(-.06,.06),14,500,'police');playSFX('explosion');}tk.soldT--;if(tk.soldT<=0&&d2<400){tk.soldT=160;spawnSoldier(tk.x,tk.y);}if(tk.hp<=0){createExplosion(tk.x,tk.y);tanks.splice(i,1);player.money+=200;}}}
 function heliTankHit(){for(var i=bullets.length-1;i>=0;i--){var b=bullets[i];if(b.owner!=='player')continue;
  if(heli&&!heli.leave&&dist(b,heli)<24){heli.hp-=b.damage;spawnParticles(b.x,b.y,'#fa0',3,2);bullets.splice(i,1);if(heli.hp<=0){createExplosion(heli.x,heli.y);heli=null;player.money+=150;}continue;}
- for(var j=tanks.length-1;j>=0;j--){if(dist(b,tanks[j])<30){tanks[j].hp-=b.damage;spawnParticles(b.x,b.y,'#fa0',3,2);bullets.splice(i,1);break;}}}}
+ for(var j=tanks.length-1;j>=0;j--){if(!tanks[j].leave&&dist(b,tanks[j])<30){tanks[j].hp-=b.damage;spawnParticles(b.x,b.y,'#fa0',3,2);bullets.splice(i,1);break;}}}}
 function checkHit(){
  if(!player.alive||player.inVehicle||player.swimming)return;
  var all=(trafficVehicles||[]).concat(policeVehicles||[]);
@@ -99,7 +102,7 @@ window.renderMissionHUD=function(ctx,W,H){
  var sn=dist(player,sleepSpot)<45;ctx.fillStyle='#8af';ctx.fillRect(sleepSpot.x-14,sleepSpot.y-8,28,16);ctx.fillStyle='#fff';ctx.fillRect(sleepSpot.x-14,sleepSpot.y-8,8,16);var sp2=Math.sin(gameTime*.08)*4;ctx.strokeStyle='#8af';ctx.lineWidth=2;ctx.beginPath();ctx.arc(sleepSpot.x,sleepSpot.y,24+sp2,0,6.28);ctx.stroke();ctx.font='18px Arial';ctx.textAlign='center';ctx.fillText('🛏️',sleepSpot.x,sleepSpot.y-26);if(sn){ctx.fillStyle='#fff';ctx.font='12px Arial';ctx.fillText('[E] спать',sleepSpot.x,sleepSpot.y+34);}
  ctx.restore();
  var s=180/WORLD_W;for(var k in shopDoors){miniCtx.fillStyle=SHOP_DEFS[k].color;miniCtx.fillRect(shopDoors[k].x*s-2,shopDoors[k].y*s-2,5,5);}miniCtx.fillStyle='#8af';miniCtx.fillRect(sleepSpot.x*s-2,sleepSpot.y*s-2,5,5);
- ctx.fillStyle='#0f0';ctx.font='10px monospace';ctx.textAlign='left';ctx.fillText('worldExtras v6',8,H-6);
+ ctx.fillStyle='#0f0';ctx.font='10px monospace';ctx.textAlign='left';ctx.fillText('worldExtras v7',8,H-6);
  if(fishState.tired){ctx.fillStyle='#fa0';ctx.fillText('🎣 рыбалка: устал',8,H-20);}else if(typeof fishState.limit!=='undefined'&&fishState.limit>0){ctx.fillStyle='#9cf';ctx.fillText('🎣 рыба '+fishState.count+'/'+fishState.limit,8,H-20);}
  if(window.interiorOpen==='sleep'){ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.fillStyle='#8af';ctx.font='bold 40px Arial';ctx.fillText('🛏️ ОТДОХНУТЬ',W/2,H/2-40);ctx.fillStyle='#fff';ctx.font='20px Arial';ctx.fillText('Поспать до утра и восстановить здоровье и силы',W/2,H/2+10);ctx.fillStyle='#fc0';ctx.font='bold 22px Arial';ctx.fillText('[ENTER] Спать     [ESC] Отмена',W/2,H/2+60);}
 };
