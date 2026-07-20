@@ -90,7 +90,7 @@ function hijackCheck(){
  showMessage(angry?'🚗 Угнал! Водитель в ярости — берегись!':'🚗 Угнал машину! Водитель сбежал.',2200);playSFX('car_enter');addWanted(0.5);
 }
 function tickExtras(){if(typeof lobbyActive!=='undefined'&&lobbyActive)return;if(typeof gameStarted!=='undefined'&&!gameStarted)return;if(window.cutsceneSystem&&window.cutsceneSystem.active)return;
- window.bridgesOpen=!!(window.M4&&(window.M4.phase==='free'||window.M4.phase==='done'));
+ window.bridgesOpen=!!(window.M5&&(window.M5.phase==='free'||window.M5.phase==='done'));
  window.bridges=window.bridgesOpen?[bridgeN,bridgeS]:[];
  trafficFix();policeUnstuck();hostileAI();heliLogic();heliTankHit();fishUpdate();checkHit();}
 setInterval(tickExtras,16);
