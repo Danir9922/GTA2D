@@ -1,4 +1,4 @@
-// ====== policeStation.js НАЧАЛО ======
+=// ====== policeStation.js НАЧАЛО ======
 (function(){
 var SBI=10, SBJ=9;
 var _owr=window.onWorldReady;
@@ -7,6 +7,7 @@ window.onWorldReady=function(){ if(_owr)_owr();
   var bx=SBI*BLOCK*TILE+ROAD_W*TILE+16, by=SBJ*BLOCK*TILE+ROAD_W*TILE+16;
   buildings.push({x:bx,y:by,w:150,h:130,color:'#2a3a5a',roofColor:'#1a2a40',_station:true});
   window.stationPos={x:bx+75,y:by+130};
+  window.mapPins=window.mapPins||[];window.mapPins.push({x:window.stationPos.x,y:window.stationPos.y,color:'#48f',label:'УЧАСТОК'});
   for(var i=0;i<4;i++){npcs.push({x:bx+rand(0,150),y:by+150+rand(0,30),angle:rand(0,6.28),speed:.5,health:60,alive:true,color:'#fca',shirt:'#1a2a5a',turnTimer:rand(60,200),fleeing:false,fleeAngle:0,animFrame:0,animTimer:0,homeX:bx+75,homeY:by+160,atHome:false,bound:true});}
 };
 var _r=window.renderMissionHUD;
