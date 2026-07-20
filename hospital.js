@@ -1,4 +1,4 @@
-// ====== hospital.js НАЧАЛО ======
+\// ====== hospital.js НАЧАЛО ======
 (function(){
 var HBI=4, HBJ=4;
 var _owr=window.onWorldReady;
@@ -7,6 +7,7 @@ window.onWorldReady=function(){ if(_owr)_owr();
   var bx=HBI*BLOCK*TILE+ROAD_W*TILE+16, by=HBJ*BLOCK*TILE+ROAD_W*TILE+16;
   buildings.push({x:bx,y:by,w:150,h:130,color:'#d8d8e8',roofColor:'#a8a8c0',_hospital:true});
   window.hospitalPos={x:bx+75,y:by+130};
+  window.mapPins=window.mapPins||[];window.mapPins.push({x:window.hospitalPos.x,y:window.hospitalPos.y,color:'#f44',label:'БОЛЬНИЦА'});
   for(var i=0;i<4;i++){npcs.push({x:bx+rand(0,150),y:by+150+rand(0,30),angle:rand(0,6.28),speed:.5,health:50,alive:true,color:'#fca',shirt:'#fff',turnTimer:rand(60,200),fleeing:false,fleeAngle:0,animFrame:0,animTimer:0,homeX:bx+75,homeY:by+160,atHome:false,bound:true});}
 };
 var _r=window.renderMissionHUD;
