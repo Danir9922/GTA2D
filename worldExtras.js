@@ -4,7 +4,7 @@ var CYCLE=86400;
 window.interiorOpen=null;
 window.skyAlpha=function(d){var h=d*24;if(h>=7&&h<17)return 0;if(h>=17&&h<19)return .12+(h-17)/2*.2;if(h>=19||h<5)return .5;if(h>=5&&h<7)return .5-(h-5)/2*.4;return 0;};
 window.skyRGB=function(d){var h=d*24;if(h>=17&&h<19)return '70,25,10';if(h>=5&&h<7)return '70,35,25';return '8,8,30';};
-window.applySleep=function(){player.health=100;var target=Math.floor(7/24*CYCLE);gameTime=Math.floor(gameTime/CYCLE)*CYCLE+target;dayTime=(gameTime%CYCLE)/CYCLE;showMessage('😴 Ты поспал. Здоровье восстановлено.',2500);playSFX('pickup');};
+window.applySleep=function(){player.health=100;var target=Math.floor(7/24*CYCLE);gameTime=Math.floor(gameTime/CYCLE)*CYCLE+target;dayTime=(gameTime%CYCLE)/CYCLE;fishState.tired=false;fishState.count=0;fishState.day=curDay();fishState.limit=randInt(5,10);showMessage('😴 Ты поспал. Здоровье и силы восстановлены.',2500);playSFX('pickup');};
 var BS=BLOCK*TILE, RC=ROAD_W*TILE;
 var PROLIV=3, RIVER=12, PED=[8,8];
 var bridgeN={x:8*BS, y:PROLIV*BS-32, w:RC, h:BS+64};
@@ -15,10 +15,12 @@ var shopDoors={};var sleepSpot={x:0,y:0};
 var PARK_BLOCKS=[[5,5],[8,5],[5,10],[10,5],[7,7]];
 var parkTrees=[],parkPaths=[];
 var heli=null,tanks=[],heliT=0,tankT=0;
+var fishState={count:0,limit:0,tired:false,day:-1,casting:false,castT:0,bx:0,by:0};
+function curDay(){return Math.floor(gameTime/CYCLE);}
 function relocateFromWater(o){
  if(typeof isInWater==='function' && !isInWater(o.x,o.y))return;
  o.y = (o.y < 8*BS) ? (PROLIV+1)*BS+RC : (RIVER+1)*BS+RC;
- o.x = clamp(o.x, RC, WORLD_W-RC); o.angle=0; if(o.speed===undefined)o.speed=0;
+ o.x = clamp(o.x, RC, WORLD_W-RC); o.angle=0; if(o.speed===undefined)o.speed=2;
 }
 window.onWorldReady=function(){
  for(var bx=0;bx<MAP_BLOCKS;bx++){window.clearBlock(bx,PROLIV);window.clearBlock(bx,RIVER);}
@@ -32,33 +34,37 @@ window.onWorldReady=function(){
  waterBodies.push({x:0,y:RIVER*BS,w:bridgeS.x,h:BS,_river:true});
  waterBodies.push({x:bridgeS.x+bridgeS.w,y:RIVER*BS,w:WORLD_W-(bridgeS.x+bridgeS.w),h:BS,_river:true});
  var pedX=PED[0]*BS+RC/2;
- for(var s=0;s<30;s++){var y=rand(PED[1]*BS+RC, (PED[1]+1)*BS-RC);var home=buildings[0],hd=1e9;for(var bi=0;bi<buildings.length;bi++){var b=buildings[bi];var dd=dist({x:pedX,y:y},{x:b.x+b.w/2,y:b.y+b.h/2});if(dd<hd){hd=dd;home=b;}}npcs.push({x:pedX+rand(-20,20),y:y,angle:Math.random()<.5?Math.PI/2:-Math.PI/2,speed:rand(.5,1.3),health:100,alive:true,color:['#e88','#8e8','#88e','#ee8','#fa8','#a8f'][randInt(0,5)],shirt:['#c44','#4c4','#44c','#cc4','#fff','#888'][randInt(0,5)],turnTimer:rand(60,200),fleeing:false,fleeAngle:0,animFrame:0,animTimer:0,homeX:pedX,homeY:y,atHome:false,bound:false});}
+ for(var s=0;s<30;s++){var y=rand(PED[1]*BS+RC,(PED[1]+1)*BS-RC);npcs.push({x:pedX+rand(-20,20),y:y,angle:Math.random()<.5?Math.PI/2:-Math.PI/2,speed:rand(.5,1.3),health:100,alive:true,color:['#e88','#8e8','#88e','#ee8','#fa8','#a8f'][randInt(0,5)],shirt:['#c44','#4c4','#44c','#cc4','#fff','#888'][randInt(0,5)],turnTimer:rand(60,200),fleeing:false,fleeAngle:0,animFrame:0,animTimer:0,homeX:pedX,homeY:y,atHome:false,bound:false});}
  for(var s=0;s<40;s++){var horiz=Math.random()<.5,ri=randInt(0,MAP_BLOCKS),al=rand(0,WORLD_W);var x,y;if(horiz){x=al;y=ri*BS+RC/2;}else{x=ri*BS+RC/2;y=al;}npcs.push({x:x,y:y,angle:rand(0,6.28),speed:rand(.5,1.4),health:100,alive:true,color:['#e88','#8e8','#88e','#ee8','#fa8','#a8f'][randInt(0,5)],shirt:['#c44','#4c4','#44c','#cc4','#fff','#888'][randInt(0,5)],turnTimer:rand(60,200),fleeing:false,fleeAngle:0,animFrame:0,animTimer:0,homeX:x,homeY:y,atHome:false,bound:false});}
  (vehicles||[]).forEach(relocateFromWater);
- (trafficVehicles||[]).forEach(relocateFromWater);
+ (trafficVehicles||[]).forEach(function(t){relocateFromWater(t);if(Math.abs(t.speed)<0.5)t.speed=2;});
  (npcs||[]).forEach(relocateFromWater);
- heli=null;tanks.length=0;heliT=0;tankT=0;
- console.log('worldExtras v5 ЗАГРУЖЕН');
+ heli=null;tanks.length=0;heliT=0;tankT=0;fishState.day=curDay();fishState.limit=randInt(5,10);fishState.count=0;fishState.tired=false;fishState.casting=false;
+ console.log('worldExtras v6 ЗАГРУЖЕН');
 };
-function checkHit(){
- if(!player.alive||player.inVehicle||player.swimming)return;
- var all=(trafficVehicles||[]).concat(policeVehicles||[]);
- for(var i=0;i<all.length;i++){var v=all[i];var sp=Math.abs(v.speed||0);if(sp>1.2&&dist(v,player)<28){if(typeof addBlood==='function')addBlood(player.x,player.y);spawnParticles(player.x,player.y,'#f00',10,3);showMission('🚗 ТЕБЯ СБИЛА МАШИНА!',2500);damagePlayer(9999);return;}}
-}
-function trafficFix(){for(var i=0;i<trafficVehicles.length;i++){var t=trafficVehicles[i];if(typeof isInWater==='function'&&isInWater(t.x,t.y)){relocateFromWater(t);}else if(Math.abs(t.speed)<0.5){t.speed=2;}}}
-function hostileAI(){for(var i=0;i<npcs.length;i++){var n=npcs[i];if(!n.hostile||!n.alive)continue;n.atHome=false;n.fleeing=false;var d=dist(n,player);n.angle=angleTo(n,player);if(d>120){n.x+=Math.cos(n.angle)*1.3;n.y+=Math.sin(n.angle)*1.3;}n.x=clamp(n.x,0,WORLD_W);n.y=clamp(n.y,0,WORLD_H);n.shootT=(n.shootT||60)-1;if(d<300&&n.shootT<=0){n.shootT=45+rand(0,40);shoot(n.x+Math.cos(n.angle)*12,n.y+Math.sin(n.angle)*12,n.angle+rand(-.12,.12),7,300,'police');playSFX('shoot');}n.animTimer++;if(n.animTimer>8){n.animTimer=0;n.animFrame=(n.animFrame+1)%4;}}}
+function frontBad(x,y,a){var fx=x+Math.cos(a)*30,fy=y+Math.sin(a)*30;return (typeof isInWater==='function'&&isInWater(fx,fy))||(typeof collidesBuilding==='function'&&collidesBuilding(fx,fy,18));}
+function trafficFix(){for(var i=0;i<trafficVehicles.length;i++){var t=trafficVehicles[i];if(typeof isInWater==='function'&&isInWater(t.x,t.y)){relocateFromWater(t);continue;}if(frontBad(t.x,t.y,t.angle)){t.angle+=(Math.random()<.5?1:-1)*Math.PI/2;if(frontBad(t.x,t.y,t.angle))t.angle+=Math.PI;t.speed=Math.max(t.speed,2);}else if(Math.abs(t.speed)<0.6){t.speed=2;}}}
+function policeUnstuck(){for(var i=0;i<policeVehicles.length;i++){var p=policeVehicles[i];if(p.leaving)continue;if(typeof isInWater==='function'&&isInWater(p.x,p.y)){p.y=(p.y<8*BS)?(PROLIV+1)*BS+RC:(RIVER+1)*BS+RC;p.x=clamp(p.x,RC,WORLD_W-RC);}if(frontBad(p.x,p.y,p.angle)){p.angle+=(Math.random()<.5?1:-1)*1.3;p.speed=Math.max(p.speed,2);}}}
+function hostileAI(){for(var i=0;i<npcs.length;i++){var n=npcs[i];if(!n.hostile||!n.alive)continue;n.atHome=false;n.fleeing=false;var d=dist(n,player);n.angle=angleTo(n,player);if(d>120){var nx=n.x+Math.cos(n.angle)*1.3,ny=n.y+Math.sin(n.angle)*1.3;if(typeof collidesBuilding!=='function'||!collidesBuilding(nx,ny,8)){n.x=nx;n.y=ny;}}n.x=clamp(n.x,0,WORLD_W);n.y=clamp(n.y,0,WORLD_H);n.shootT=(n.shootT||60)-1;if(d<300&&n.shootT<=0){n.shootT=45+rand(0,40);shoot(n.x+Math.cos(n.angle)*12,n.y+Math.sin(n.angle)*12,n.angle+rand(-.12,.12),7,300,'police');playSFX('shoot');}n.animTimer++;if(n.animTimer>8){n.animTimer=0;n.animFrame=(n.animFrame+1)%4;}}}
 function spawnSoldier(x,y){npcs.push({x:x+rand(-20,20),y:y+rand(-20,20),angle:0,speed:1,health:60,alive:true,color:'#dba',shirt:'#353',turnTimer:999,fleeing:false,fleeAngle:0,animFrame:0,animTimer:0,homeX:x,homeY:y,atHome:false,bound:false,hostile:true,shootT:40});}
 function heliLogic(){var st=Math.floor(player.wanted);
  if(st>=4){heliT--;if(!heli&&heliT<=0){var a=rand(0,6.28);heli={x:player.x+Math.cos(a)*700,y:player.y+Math.sin(a)*700,angle:0,hp:120,shootT:60,rot:0};}}
  else if(heli){heli.leave=true;}
  if(heli){heli.rot+=0.4;var d=dist(heli,player);heli.angle=angleTo(heli,player);if(heli.leave){heli.x+=Math.cos(heli.angle+Math.PI)*5;heli.y+=Math.sin(heli.angle+Math.PI)*5;if(d>1400)heli=null;}else{if(d>180){heli.x+=Math.cos(heli.angle)*3.2;heli.y+=Math.sin(heli.angle)*3.2;}heli.shootT--;if(heli.shootT<=0&&d<400){heli.shootT=35;shoot(heli.x,heli.y,angleTo(heli,player)+rand(-.1,.1),8,400,'police');playSFX('shoot');}}}
  if(st>=5){tankT--;if(tankT<=0&&tanks.length<2){tankT=400;var a2=rand(0,6.28);tanks.push({x:player.x+Math.cos(a2)*600,y:player.y+Math.sin(a2)*600,angle:0,hp:300,shootT:80,soldT:120});}}
- for(var i=tanks.length-1;i>=0;i--){var tk=tanks[i];var d2=dist(tk,player);tk.angle=angleTo(tk,player);if(d2>140){var nx=tk.x+Math.cos(tk.angle)*1.1,ny=tk.y+Math.sin(tk.angle)*1.1;if(typeof collidesBuilding!=='function'||!collidesBuilding(nx,ny,24)){tk.x=nx;tk.y=ny;}}tk.shootT--;if(tk.shootT<=0&&d2<500){tk.shootT=70;shoot(tk.x+Math.cos(tk.angle)*26,tk.y+Math.sin(tk.angle)*26,tk.angle+rand(-.06,.06),14,500,'police');playSFX('explosion');}tk.soldT--;if(tk.soldT<=0&&d2<400){tk.soldT=160;spawnSoldier(tk.x,tk.y);}if(tk.hp<=0){createExplosion(tk.x,tk.y);tanks.splice(i,1);player.money+=200;}}
-}
+ for(var i=tanks.length-1;i>=0;i--){var tk=tanks[i];var d2=dist(tk,player);tk.angle=angleTo(tk,player);if(d2>140){var nx=tk.x+Math.cos(tk.angle)*1.1,ny=tk.y+Math.sin(tk.angle)*1.1;if(typeof collidesBuilding!=='function'||!collidesBuilding(nx,ny,24)){tk.x=nx;tk.y=ny;}}if(typeof isInWater==='function'&&isInWater(tk.x,tk.y)){tk.y=(tk.y<8*BS)?(PROLIV+1)*BS+RC:(RIVER+1)*BS+RC;}tk.shootT--;if(tk.shootT<=0&&d2<500){tk.shootT=70;shoot(tk.x+Math.cos(tk.angle)*26,tk.y+Math.sin(tk.angle)*26,tk.angle+rand(-.06,.06),14,500,'police');playSFX('explosion');}tk.soldT--;if(tk.soldT<=0&&d2<400){tk.soldT=160;spawnSoldier(tk.x,tk.y);}if(tk.hp<=0){createExplosion(tk.x,tk.y);tanks.splice(i,1);player.money+=200;}}}
 function heliTankHit(){for(var i=bullets.length-1;i>=0;i--){var b=bullets[i];if(b.owner!=='player')continue;
  if(heli&&!heli.leave&&dist(b,heli)<24){heli.hp-=b.damage;spawnParticles(b.x,b.y,'#fa0',3,2);bullets.splice(i,1);if(heli.hp<=0){createExplosion(heli.x,heli.y);heli=null;player.money+=150;}continue;}
  for(var j=tanks.length-1;j>=0;j--){if(dist(b,tanks[j])<30){tanks[j].hp-=b.damage;spawnParticles(b.x,b.y,'#fa0',3,2);bullets.splice(i,1);break;}}}}
-function tickExtras(){trafficFix();hostileAI();heliLogic();heliTankHit();checkHit();}
+function checkHit(){
+ if(!player.alive||player.inVehicle||player.swimming)return;
+ var all=(trafficVehicles||[]).concat(policeVehicles||[]);
+ for(var i=0;i<all.length;i++){var v=all[i];var sp=Math.abs(v.speed||0);if(sp>1.2&&dist(v,player)<28){if(typeof addBlood==='function')addBlood(player.x,player.y);spawnParticles(player.x,player.y,'#f00',10,3);showMission('🚗 ТЕБЯ СБИЛА МАШИНА!',2500);damagePlayer(9999);return;}}}
+function canFish(){return player.alive&&!player.inVehicle&&!window.interiorOpen&&!(window.cutsceneSystem&&window.cutsceneSystem.active)&&!player.swimming&&typeof isInWater==='function'&&isInWater(player.x+Math.cos(player.angle)*24,player.y+Math.sin(player.angle)*24);}
+function doCast(){if(fishState.tired){showMessage('😩 Ты устал от рыбалки. Поспи или приходи завтра.',2200);return;}if(fishState.day!==curDay()){fishState.day=curDay();fishState.count=0;fishState.limit=randInt(5,10);fishState.tired=false;}fishState.casting=true;fishState.castT=80+randInt(0,70);fishState.bx=player.x+Math.cos(player.angle)*32;fishState.by=player.y+Math.sin(player.angle)*32;showMessage('🎣 Забросил удочку... жди поклёвки',1300);}
+function fishUpdate(){var cd=curDay();if(fishState.day!==-1&&fishState.day!==cd){fishState.day=cd;fishState.count=0;fishState.limit=randInt(5,10);fishState.tired=false;}if(fishState.casting){fishState.castT--;if(fishState.castT<=0){fishState.casting=false;if(Math.random()<0.75){if(fishState.count<fishState.limit){fishState.count++;player.money+=10;showMessage('🐟 Поймал рыбу! +$10  ('+fishState.count+'/'+fishState.limit+')',1900);playSFX('pickup');spawnParticles(fishState.bx,fishState.by,'#9cf',6,2);}else{fishState.tired=true;showMessage('😩 Устал от рыбалки на сегодня. Поспи или приходи завтра!',2600);}}else{showMessage('🎣 Ничего не клюнуло...',1400);}}}}
+function tickExtras(){if(typeof lobbyActive!=='undefined'&&lobbyActive)return;if(typeof gameStarted!=='undefined'&&!gameStarted)return;if(window.cutsceneSystem&&window.cutsceneSystem.active)return;trafficFix();policeUnstuck();hostileAI();heliLogic();heliTankHit();fishUpdate();checkHit();}
+setInterval(tickExtras,16);
 function drawDoor(ctx,x,y,color,icon,label,near){var p=Math.sin(gameTime*.08)*4;ctx.strokeStyle=color;ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,26+p,0,6.28);ctx.stroke();ctx.globalAlpha=.15;ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,26+p,0,6.28);ctx.fill();ctx.globalAlpha=1;ctx.font='22px Arial';ctx.textAlign='center';ctx.fillText(icon,x,y+8);ctx.fillStyle=color;ctx.font='bold 11px Arial';ctx.fillText(label,x,y-32);if(near){ctx.fillStyle='#fff';ctx.font='12px Arial';ctx.fillText('[E] войти',x,y+44);}}
 function drawBridge(ctx,b,label){
  ctx.fillStyle='#3a2a18';ctx.fillRect(b.x-6,b.y,b.w+12,b.h);
@@ -79,13 +85,13 @@ window.renderGroundExtras=function(ctx){
  parkTrees.forEach(function(t){ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.arc(t.x+3,t.y+3,t.r,0,6.28);ctx.fill();ctx.fillStyle='#1a4a1a';ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,6.28);ctx.fill();ctx.fillStyle='#2e7a2e';ctx.beginPath();ctx.arc(t.x-2,t.y-2,t.r*0.6,0,6.28);ctx.fill();});
  tanks.forEach(function(tk){ctx.save();ctx.translate(tk.x,tk.y);ctx.rotate(tk.angle);ctx.fillStyle='#3a4030';ctx.fillRect(-26,-16,52,32);ctx.fillStyle='#4a5040';ctx.beginPath();ctx.arc(0,0,12,0,6.28);ctx.fill();ctx.fillStyle='#2a3020';ctx.fillRect(8,-3,24,6);ctx.restore();ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(tk.x-20,tk.y-26,40,4);ctx.fillStyle='#f44';ctx.fillRect(tk.x-20,tk.y-26,40*(tk.hp/300),4);});
  if(heli){ctx.save();ctx.translate(heli.x,heli.y);ctx.fillStyle='#444';ctx.fillRect(-14,-6,28,12);ctx.strokeStyle='rgba(200,200,200,.7)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-22*Math.cos(heli.rot),-2);ctx.lineTo(22*Math.cos(heli.rot),-2);ctx.stroke();ctx.beginPath();ctx.moveTo(-22*Math.sin(heli.rot),-2);ctx.lineTo(22*Math.sin(heli.rot),-2);ctx.stroke();ctx.fillStyle='#f00';ctx.fillRect(-2,8,4,4);ctx.restore();}
+ if(fishState.casting){ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(player.x,player.y);ctx.lineTo(fishState.bx,fishState.by);ctx.stroke();ctx.fillStyle='#f33';ctx.beginPath();ctx.arc(fishState.bx,fishState.by+Math.sin(gameTime*.2)*2,4,0,6.28);ctx.fill();}
  ctx.textAlign='center';
  ctx.fillStyle='#cfc';ctx.font='bold 22px Arial';ctx.fillText('🏝️ ДИКИЙ ОСТРОВ',WORLD_W/2,1*BS+70);
  ctx.fillStyle='#cfe';ctx.font='italic 22px Arial';ctx.fillText('р. Лос-Рио',WORLD_W/2,RIVER*BS+BS/2+8);
 };
 var _wr=window.renderMissionHUD;
 window.renderMissionHUD=function(ctx,W,H){
- if(!window._extHooked && typeof update==='function'){window._extHooked=true;var _ou=window.update;window.update=function(){_ou();tickExtras();};}
  if(_wr)_wr(ctx,W,H);
  if(window.cutsceneSystem&&window.cutsceneSystem.active)return;
  ctx.save();ctx.translate(-camera.x,-camera.y);
@@ -93,15 +99,16 @@ window.renderMissionHUD=function(ctx,W,H){
  var sn=dist(player,sleepSpot)<45;ctx.fillStyle='#8af';ctx.fillRect(sleepSpot.x-14,sleepSpot.y-8,28,16);ctx.fillStyle='#fff';ctx.fillRect(sleepSpot.x-14,sleepSpot.y-8,8,16);var sp2=Math.sin(gameTime*.08)*4;ctx.strokeStyle='#8af';ctx.lineWidth=2;ctx.beginPath();ctx.arc(sleepSpot.x,sleepSpot.y,24+sp2,0,6.28);ctx.stroke();ctx.font='18px Arial';ctx.textAlign='center';ctx.fillText('🛏️',sleepSpot.x,sleepSpot.y-26);if(sn){ctx.fillStyle='#fff';ctx.font='12px Arial';ctx.fillText('[E] спать',sleepSpot.x,sleepSpot.y+34);}
  ctx.restore();
  var s=180/WORLD_W;for(var k in shopDoors){miniCtx.fillStyle=SHOP_DEFS[k].color;miniCtx.fillRect(shopDoors[k].x*s-2,shopDoors[k].y*s-2,5,5);}miniCtx.fillStyle='#8af';miniCtx.fillRect(sleepSpot.x*s-2,sleepSpot.y*s-2,5,5);
- ctx.fillStyle='#0f0';ctx.font='10px monospace';ctx.textAlign='left';ctx.fillText('worldExtras v5',8,H-6);
- if(window.interiorOpen==='sleep'){ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.fillStyle='#8af';ctx.font='bold 40px Arial';ctx.fillText('🛏️ ОТДОХНУТЬ',W/2,H/2-40);ctx.fillStyle='#fff';ctx.font='20px Arial';ctx.fillText('Поспать до утра и восстановить здоровье',W/2,H/2+10);ctx.fillStyle='#fc0';ctx.font='bold 22px Arial';ctx.fillText('[ENTER] Спать     [ESC] Отмена',W/2,H/2+60);}
+ ctx.fillStyle='#0f0';ctx.font='10px monospace';ctx.textAlign='left';ctx.fillText('worldExtras v6',8,H-6);
+ if(fishState.tired){ctx.fillStyle='#fa0';ctx.fillText('🎣 рыбалка: устал',8,H-20);}else if(typeof fishState.limit!=='undefined'&&fishState.limit>0){ctx.fillStyle='#9cf';ctx.fillText('🎣 рыба '+fishState.count+'/'+fishState.limit,8,H-20);}
+ if(window.interiorOpen==='sleep'){ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.fillStyle='#8af';ctx.font='bold 40px Arial';ctx.fillText('🛏️ ОТДОХНУТЬ',W/2,H/2-40);ctx.fillStyle='#fff';ctx.font='20px Arial';ctx.fillText('Поспать до утра и восстановить здоровье и силы',W/2,H/2+10);ctx.fillStyle='#fc0';ctx.font='bold 22px Arial';ctx.fillText('[ENTER] Спать     [ESC] Отмена',W/2,H/2+60);}
 };
 window.drawMiniLabels=function(mc,s){mc.textAlign='center';mc.fillStyle='#cfc';mc.font='italic 8px Arial';mc.fillText('🏝️ ОСТРОВ',WORLD_W*0.5*s,(1*BS)*s);mc.fillStyle='#9cf';mc.font='italic 9px Arial';mc.fillText('р. Лос-Рио',WORLD_W*0.5*s,(RIVER*BS+BS/2)*s);};
 window.drawMapLabels=function(ctx,SX,SY){ctx.textAlign='center';ctx.fillStyle='#cfc';ctx.font='italic 20px Arial';ctx.fillText('🏝️ ДИКИЙ ОСТРОВ',SX(WORLD_W*0.5),SY(1*BS));ctx.fillStyle='#9cf';ctx.font='italic 22px Arial';ctx.fillText('р. Лос-Рио',SX(WORLD_W*0.5),SY(RIVER*BS+BS/2));};
 function tryOpen(){for(var k in shopDoors){if(dist(player,shopDoors[k])<45)return k;}if(dist(player,sleepSpot)<45)return 'sleep';return null;}
 addEventListener('keydown',function(e){
  if(window.interiorOpen==='sleep'){if(e.code==='Enter'||e.code==='Space'||e.code==='KeyE'){window.applySleep();window.interiorOpen=null;}if(e.code==='Escape')window.interiorOpen=null;e.stopImmediatePropagation();e.preventDefault();return;}
- if(window.interiorOpen===null&&e.code==='KeyE'){var d=tryOpen();if(d==='sleep'){window.interiorOpen='sleep';e.stopImmediatePropagation();e.preventDefault();return;}if(d==='weapon'&&window.openWeaponShop){window.openWeaponShop();e.stopImmediatePropagation();e.preventDefault();return;}if(d==='clothes'&&window.openClothesShop){window.openClothesShop();e.stopImmediatePropagation();e.preventDefault();return;}if(d==='home'&&window.openHome){window.openHome();e.stopImmediatePropagation();e.preventDefault();return;}}
+ if(window.interiorOpen===null&&e.code==='KeyE'){var d=tryOpen();if(d==='sleep'){window.interiorOpen='sleep';e.stopImmediatePropagation();e.preventDefault();return;}if(d==='weapon'&&window.openWeaponShop){window.openWeaponShop();e.stopImmediatePropagation();e.preventDefault();return;}if(d==='clothes'&&window.openClothesShop){window.openClothesShop();e.stopImmediatePropagation();e.preventDefault();return;}if(d==='home'&&window.openHome){window.openHome();e.stopImmediatePropagation();e.preventDefault();return;}if(canFish()){doCast();e.stopImmediatePropagation();e.preventDefault();return;}}
 },true);
 window.shopDoors=shopDoors;window.sleepSpot=sleepSpot;
 })();
