@@ -56,10 +56,14 @@ function drawInterior(ctx,W,H,tvMode){
  drawPlayer(ctx,W,H);
  if(tvMode){ctx.fillStyle='rgba(0,0,0,.85)';ctx.fillRect(W*0.18,H*0.30,W*0.64,H*0.40);ctx.strokeStyle='#0a3';ctx.lineWidth=3;ctx.strokeRect(W*0.18,H*0.30,W*0.64,H*0.40);ctx.fillStyle='#0f0';ctx.font='bold 22px monospace';ctx.textAlign='left';ctx.fillText('CH '+(tvCh+1),W*0.21,H*0.36);ctx.fillStyle='#fff';ctx.font='20px Arial';ctx.textAlign='center';var txt=TV_CHANNELS[tvCh%TV_CHANNELS.length],words=txt.split(' '),line='',ly=H*0.46;words.forEach(function(w){var t=line+w+' ';if(ctx.measureText(t).width>W*0.56){ctx.fillText(line,W*0.5,ly);line=w+' ';ly+=28;}else line=t;});ctx.fillText(line,W*0.5,ly);ctx.fillStyle='#aaa';ctx.font='15px Arial';ctx.fillText('← → переключить канал     E / ESC — выключить ТВ',W*0.5,H*0.66);}
  ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,H-40,W,40);ctx.fillStyle='#ff0';ctx.font='bold 14px Arial';ctx.textAlign='center';ctx.fillText('WASD — ходить   ·   подойди к предмету (жёлтая рамка) и нажми E   ·   ESC — ВЫЙТИ СРАЗУ',W/2,H-14);
- ctx.fillStyle='#0f0';ctx.font='10px monospace';ctx.textAlign='left';ctx.fillText('home v6',8,H-46);
+ ctx.fillStyle='#0f0';ctx.font='10px monospace';ctx.textAlign='left';ctx.fillText('home v7',8,H-46);
 }
 function hideHUD(on){var ids=['minimap-container','controls-hint','clock','hud-top','info-panel','speed-display'];for(var i=0;i<ids.length;i++){var el=document.getElementById(ids[i]);if(el)el.style.display=on?'none':'';}}
 addEventListener('keydown',function(e){
+ if(window.interiorOpen===null){
+  if(e.code==='KeyE' && window.homePos && typeof dist==='function' && dist(player,window.homePos)<60){ window.openHome(); e.stopImmediatePropagation(); e.preventDefault(); }
+  return;
+ }
  if(window.interiorOpen==='tv'){
   if(e.code==='ArrowLeft'){tvCh=(tvCh-1+TV_CHANNELS.length)%TV_CHANNELS.length;if(typeof playSFX==='function')playSFX('click');}
   else if(e.code==='ArrowRight'){tvCh=(tvCh+1)%TV_CHANNELS.length;if(typeof playSFX==='function')playSFX('click');}
